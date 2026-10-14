@@ -47,6 +47,14 @@ def Page():
     當時 = df[df["時段"] == 時段.value]
     if 行政區.value != "全部行政區":
         當時 = 當時[當時["sarea"] == 行政區.value]
+        # 新增：計算目前篩選條件下的站點統計
+    站點總數 = len(當時)
+    空站數 = (當時["available_rent_bikes"] <= 門檻.value).sum()
+
+    solara.Markdown(
+        f"**篩選後站點總數：** {站點總數} 站\n\n"
+        f"**符合空站門檻的站點數：** {空站數} 站"
+    )
     表 = 各區空站比例(當時, 門檻.value)
 
     圖 = px.bar(

@@ -17,10 +17,12 @@ df = pd.read_csv(DATA_PATH, dtype={"sno": str, "act": str})
 df = df[df["act"] == "1"]  # 只看營運中的站
 
 時段們 = sorted(df["時段"].unique())
+行政區們 = sorted(df["sarea"].dropna().unique())
 
 # reactive：值改變時，用到它的元件會自動重新執行。
 門檻 = solara.reactive(0)
 時段 = solara.reactive(時段們[0])
+行政區 = solara.reactive("全部行政區")
 
 
 def 各區空站比例(資料, 門檻值):
@@ -39,9 +41,12 @@ def Page():
     # 滑桿預設會撐滿整個頁寬，用 Column 限制最大寬度，比較好操作。
     with solara.Column(style={"max-width": "480px"}):
         solara.SliderInt("空站門檻：可借車 ≤", value=門檻, min=0, max=5)
+        solara.Select("選擇行政區", values=["全部行政區", *行政區們], value=行政區)
     solara.ToggleButtonsSingle(value=時段, values=時段們)
 
     當時 = df[df["時段"] == 時段.value]
+    if 行政區.value != "全部行政區":
+        當時 = 當時[當時["sarea"] == 行政區.value]
     表 = 各區空站比例(當時, 門檻.value)
 
     圖 = px.bar(
@@ -49,7 +54,7 @@ def Page():
         x="空站比例",
         y="sarea",
         orientation="h",
-        title=f"{時段.value}，可借車 ≤ {門檻.value} 算空站（只算營運中的站）",
+        title=f"{時段.value}、{行政區.value}，可借車 ≤ {門檻.value} 算空站（只算營運中的站）",
         labels={"sarea": "", "空站比例": "空站比例"},
     )
     # 每區給 30 px 高度，行政區名稱才不會被 Plotly 自動隔行省略；換成區數更多的縣市也適用。
